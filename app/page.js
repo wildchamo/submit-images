@@ -16,7 +16,9 @@ export default function SubmitImagesForm() {
       const imagesReadyToPrint = await uploadImages(files);
 
       console.log("imagesReadyToPrint", imagesReadyToPrint);
+
       generateExcel(imagesReadyToPrint);
+      setFiles([]);
     } catch (error) {
       console.error("Error subiendo las imágenes:", error);
     } finally {
