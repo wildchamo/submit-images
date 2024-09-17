@@ -10,22 +10,31 @@ const s3 = new AWS.S3({
   region: awsRegion,
 });
 
+function sanitizeFileName(fileName) {
+  return fileName
+    .toLowerCase()
+    .replace(/\s+/g, "_")
+    .replace(/[^a-z0-9_\-\.]/g, "");
+}
+
 export async function uploadFile(file) {
-  console.log(file);
-  const fileName = file.name.split(".").slice(0, -1).join(".");
-  const fileExtension = file.name.split(".").pop();
+  const originalFileName = file.name;
+  const sanitizedFileName = sanitizeFileName(
+    originalFileName.split(".").slice(0, -1).join(".")
+  );
+  const fileExtension = sanitizeFileName(originalFileName.split(".").pop());
 
   const randomNumber = Math.floor(Math.random() * 1000)
     .toString()
     .padStart(3, "0");
 
-  const newFileName = `${fileName}_${randomNumber}.${fileExtension}`;
+  const newFileName = `${sanitizedFileName}_${randomNumber}.${fileExtension}`;
 
   const params = {
     Bucket: "refaccionesdotcom",
     Key: newFileName,
     Body: file,
-    ACL: "public-read",
+    ContentType: file.type,
   };
 
   try {
