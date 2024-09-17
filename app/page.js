@@ -25,7 +25,7 @@ export default function SubmitImagesForm() {
   };
 
   return (
-    <section>
+    <section className="grid place-content-center p-20">
       <h2 className="text-2xl font-bold">
         Sube las imagenes para retornar el excel con los links a las mismas
       </h2>
@@ -33,7 +33,7 @@ export default function SubmitImagesForm() {
 
       <button
         onClick={handleUpload}
-        className="flex justify-center items-center bg-primaryBlue hover:bg-primaryBlueHover w-full h-10 text-center text-white font-bold py-2 px-4 rounded focus:outline-none cursor-pointer"
+        className="flex justify-center items-center bg-gray-600 hover:bg-gray-500 w-full h-10 text-center text-white font-bold py-2 px-4 rounded focus:outline-none cursor-pointer"
       >
         {isLoading ? "Cargando..." : "Subir"}
       </button>
