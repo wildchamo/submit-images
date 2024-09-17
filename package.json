@@ -11,7 +11,8 @@
   "dependencies": {
     "react": "^18",
     "react-dom": "^18",
-    "next": "14.2.11"
+    "next": "14.2.11",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "postcss": "^8",
