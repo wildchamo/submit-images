@@ -1,8 +1,17 @@
-export async function uploadImage(file) {
-  let url;
+import AWS from "aws-sdk";
 
-  // = process.env.NEXT_PUBLIC_SUPABASE_URL + "/storage/v1/object/public/";
-  console.warn(file);
+const awsAccessKey = process.env.NEXT_PUBLIC_AWS_ACCESS_KEY_ID;
+const awsSecretKey = process.env.NEXT_PUBLIC_AWS_SECRET_ACCESS_KEY;
+const awsRegion = process.env.NEXT_PUBLIC_AWS_REGION;
+
+const s3 = new AWS.S3({
+  accessKeyId: awsAccessKey,
+  secretAccessKey: awsSecretKey,
+  region: awsRegion,
+});
+
+export async function uploadFile(file) {
+  console.log(file);
   const fileName = file.name.split(".").slice(0, -1).join(".");
   const fileExtension = file.name.split(".").pop();
 
@@ -12,43 +21,19 @@ export async function uploadImage(file) {
 
   const newFileName = `${fileName}_${randomNumber}.${fileExtension}`;
 
-  const { data, error } = await supabase.storage
-    .from("zorcesforms")
-    .upload("/" + newFileName, file);
-  if (error) {
-    return error;
-  } else {
-    return url + data.fullPath;
-  }
-}
-function sanitizeFileName(fileName) {
-  return fileName
-    .toLowerCase()
-    .replace(/\s+/g, "_") // Reemplaza espacios con guiones bajos
-    .replace(/[^a-z0-9_\-\.]/g, ""); // Elimina caracteres no permitidos
-}
+  const params = {
+    Bucket: "refaccionesdotcom",
+    Key: newFileName,
+    Body: file,
+    ACL: "public-read",
+  };
 
-export async function uploadFile(file) {
-  let url = process.env.NEXT_PUBLIC_SUPABASE_URL + "/storage/v1/object/public/";
-  console.warn(file);
-
-  const sanitizedFileName = sanitizeFileName(
-    file.name.split(".").slice(0, -1).join(".")
-  );
-  const fileExtension = file.name.split(".").pop();
-
-  const randomNumber = Math.floor(Math.random() * 1000)
-    .toString()
-    .padStart(3, "0");
-
-  const newFileName = `${sanitizedFileName}_${randomNumber}.${fileExtension}`;
-
-  const { data, error } = await supabase.storage
-    .from("zorcesforms")
-    .upload("/" + newFileName, file);
-  if (error) {
-    return error;
-  } else {
-    return url + data.fullPath;
+  try {
+    const data = await s3.upload(params).promise();
+    console.log("File uploaded successfully: ", data.Location);
+    return data.Location;
+  } catch (error) {
+    console.error("Error uploading file: ", error);
+    throw error;
   }
 }
