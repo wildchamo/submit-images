@@ -47,10 +47,14 @@ const uploadImages = async (imagesArray) => {
   let imagesLinks = [];
   for (let image of imagesArray) {
     const url = await uploadFile(image);
-    imagesLinks.push({ name: image.name, url });
+    imagesLinks.push({ name: getFileNameWithoutExtension(image.name), url });
   }
   return imagesLinks;
 };
+
+function getFileNameWithoutExtension(fileName) {
+  return fileName.split(".").slice(0, -1).join(".");
+}
 
 const generateExcel = (data) => {
   const worksheet = XLSX.utils.json_to_sheet(data);
