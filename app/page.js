@@ -4,15 +4,31 @@ import { uploadFile } from "@/services/submit-image";
 
 import * as XLSX from "xlsx";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 export default function SubmitImagesForm() {
   const [files, setFiles] = useState([]);
 
   const [isLoading, setIsLoading] = useState(false);
+
+  const [uploadedFiles, setUploadedFiles] = useState(0);
+
+  const totalFilesRef = useRef(0);
+
+  const uploadImages = async (imagesArray) => {
+    let imagesLinks = [];
+    for (let image of imagesArray) {
+      const url = await uploadFile(image);
+      imagesLinks.push({ name: getFileNameWithoutExtension(image.name), url });
+      setUploadedFiles((prev) => prev + 1);
+    }
+    return imagesLinks;
+  };
+
   const handleUpload = async () => {
     setIsLoading(true);
     try {
+      totalFilesRef.current = files.length;
       const imagesReadyToPrint = await uploadImages(files);
 
       console.log("imagesReadyToPrint", imagesReadyToPrint);
@@ -37,20 +53,13 @@ export default function SubmitImagesForm() {
         onClick={handleUpload}
         className="flex justify-center items-center bg-gray-600 hover:bg-gray-500 w-full h-10 text-center text-white font-bold py-2 px-4 rounded focus:outline-none cursor-pointer"
       >
-        {isLoading ? "Cargando..." : "Subir"}
+        {isLoading
+          ? `Cargando... ${uploadedFiles}/${totalFilesRef.current}`
+          : "Subir"}
       </button>
     </section>
   );
 }
-
-const uploadImages = async (imagesArray) => {
-  let imagesLinks = [];
-  for (let image of imagesArray) {
-    const url = await uploadFile(image);
-    imagesLinks.push({ name: getFileNameWithoutExtension(image.name), url });
-  }
-  return imagesLinks;
-};
 
 function getFileNameWithoutExtension(fileName) {
   return fileName.split(".").slice(0, -1).join(".");
