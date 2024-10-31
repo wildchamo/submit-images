@@ -19,7 +19,7 @@ function sanitizeFileName(fileName) {
     .replace(/[^a-z0-9_\-\.]/g, "");
 }
 
-export async function uploadFile(file, folderName = "manijauto") {
+export async function uploadFile(file, folderName = "IDEMITSU") {
   const originalFileName = file.name;
   const sanitizedFileName = sanitizeFileName(
     originalFileName.split(".").slice(0, -1).join(".")
@@ -43,46 +43,44 @@ export async function uploadFile(file, folderName = "manijauto") {
 
   try {
     const data = await s3.upload(params).promise();
-    console.log("File uploaded successfully: ", data.Location);
     return data.Location;
   } catch (error) {
     console.error("Error uploading file: ", error);
-    throw error;
   }
 }
 
-async function listAllObjects(
-  bucketName,
-  continuationToken = null,
-  allObjects = []
-) {
-  const params = {
-    Bucket: bucketName,
-    ContinuationToken: continuationToken,
-  };
+async function listAllObjects(bucketName, prefix) {
+  let objects = [];
+  let continuationToken = null;
 
   try {
-    const data = await s3.listObjectsV2(params).promise();
-    allObjects.push(...data.Contents);
+    do {
+      const params = {
+        Bucket: bucketName,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      };
 
-    console.log("Objects listed: ", data.Contents.length);
+      const response = await s3.listObjectsV2(params).promise();
+      objects = objects.concat(response.Contents);
+      continuationToken = response.IsTruncated
+        ? response.NextContinuationToken
+        : null;
+    } while (continuationToken);
 
-    if (data.IsTruncated) {
-      return listAllObjects(bucketName, data.NextContinuationToken, allObjects);
-    } else {
-      return allObjects;
-    }
+    return objects;
   } catch (error) {
     console.error("Error listing objects: ", error);
     throw error;
   }
 }
 
-async function generateExcelFromBucket(bucketName) {
+export async function generateExcelFromBucket(bucketName, folderPrefix) {
   console.warn("arrancando");
   try {
-    const objects = await listAllObjects(bucketName);
-    const data = objects.map((obj) => ({
+    const filteredObjects = await listAllObjects(bucketName, folderPrefix);
+
+    const data = filteredObjects.map((obj) => ({
       name: getFileNameWithoutExtension(obj.Key),
       url: `https://${bucketName}.s3.${awsRegion}.amazonaws.com/${obj.Key}`,
     }));
@@ -90,7 +88,7 @@ async function generateExcelFromBucket(bucketName) {
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Files");
-    XLSX.writeFile(workbook, "bucket_files.xlsx");
+    XLSX.writeFile(workbook, `${folderPrefix}images.xlsx`);
 
     console.log("Excel file generated successfully.");
   } catch (error) {
@@ -98,8 +96,17 @@ async function generateExcelFromBucket(bucketName) {
   }
 }
 
-// generateExcelFromBucket("refaccionesdotcom");
+// Llamada a la función con el bucket y el prefijo de la carpeta
+generateExcelFromBucket("refaccionesdotcom", "star/");
 
-function getFileNameWithoutExtension(fileName) {
-  return fileName.split(".").slice(0, -1).join(".");
+function getFileNameWithoutExtension(filePath) {
+  const segments = filePath.split("/");
+  const fileNameWithExtension = segments[segments.length - 1];
+
+  const fileNameWithoutExtension = fileNameWithExtension
+    .split(".")
+    .slice(0, -1)
+    .join(".");
+
+  return fileNameWithoutExtension;
 }
