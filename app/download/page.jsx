@@ -1,16 +1,37 @@
 "use client";
-import { generateExcelFromBucket } from "@/services/submit-image";
+import { generateExcelFromBucket, listFolders } from "@/services/submit-image";
 import { useState, useRef, useEffect } from "react";
+
 export default function DownloadPage() {
   const folderNameRef = useRef(null);
-
   const [isLoading, setIsLoading] = useState(false);
+  const [folders, setFolders] = useState([]);
+
+  useEffect(() => {
+    const fetchFolders = async () => {
+      try {
+        const foldersList = await listFolders();
+
+        console.log("foldersList", foldersList);
+        setFolders(foldersList);
+      } catch (error) {
+        console.error("Error fetching folders: ", error);
+      }
+    };
+
+    fetchFolders();
+  }, []);
+
   const handleUpload = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    const folderName = folderNameRef.current.value;
+    let folderName = folderNameRef.current.value;
 
-    await generateExcelFromBucket("refaccionesdotcom", `${folderName}/`);
+    if (!folderName.endsWith("/")) {
+      folderName += "/";
+    }
+
+    await generateExcelFromBucket("refaccionesdotcom", folderName);
     setIsLoading(false);
   };
 
@@ -39,8 +60,17 @@ export default function DownloadPage() {
         onClick={handleUpload}
         className="flex justify-center items-center bg-gray-600 hover:bg-gray-500 w-full h-10 text-center text-white font-bold py-2 px-4 rounded focus:outline-none cursor-pointer"
       >
-        {isLoading ? "Cargando..." : "Descargar"}
+        {isLoading ? "Descargando..." : "Descargar"}
       </button>
+
+      <div className="mt-4">
+        <h3 className="text-xl font-bold mb-2">Carpetas disponibles:</h3>
+        <ul className="list-disc list-inside">
+          {folders.map((folder, index) => (
+            <li key={index}>{folder}</li>
+          ))}
+        </ul>
+      </div>
     </section>
   );
 }
